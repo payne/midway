@@ -1,5 +1,23 @@
 MIDWAY(PUBLIC)							MIDWAY(PUBLIC)
 
+MODERN BUILD NOTES
+
+	Local native build:
+		% make
+		% ./midway
+
+	Local WebAssembly build (requires Emscripten/emcc):
+		% make web
+		# output: web/dist/index.html (+ .js/.wasm/.css)
+
+	GitHub Pages deployment:
+		- Workflow: .github/workflows/pages.yml
+		- Trigger: push to main (or manual workflow_dispatch)
+		- The workflow builds web artifacts with Emscripten,
+		  uploads web/dist as the Pages artifact, and deploys
+		  via actions/deploy-pages.
+		- Live site URL: https://payne.github.io/midway/
+
 USAGE
 	% Midway [-b bad weather]
 

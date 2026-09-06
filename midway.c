@@ -767,6 +767,11 @@ void initialize(void)
 	char **mess;
 	int *table;
 
+#ifdef __EMSCRIPTEN__
+	player = virtual = amtable[0];
+	return;
+#endif
+
 	setbuf(stdout, NULL);
 
 	printf("Choose a side (Japanese or American) ? ");

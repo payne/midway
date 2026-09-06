@@ -5,10 +5,14 @@ LDLIBS= -lncurses
 FILES= airstrike.c etc.c midway.c movebombs.c moveships.c screen.c
 OBJS= airstrike.o etc.o midway.o movebombs.o moveships.o screen.o
 PROG= midway
+WEB_DIR= web/dist
+WEB_FILES= ${FILES} web/ncurses_compat.c
 JUNKFILES= ${PROG} fluff junk tags
 PUB= /usr/public
 
 all: ${PROG}
+
+web: ${WEB_DIR}/index.html
 
 ${PROG}: ${OBJS}
 	${CC} ${OBJS} -o ${PROG} ${LDLIBS}
@@ -29,5 +33,16 @@ ${PUB}/${PROG}.txt: README
 
 clean:
 	${RM} ${OBJS} ${JUNKFILES}
+	${RM} -r ${WEB_DIR}
 
-.PHONY: all install clean
+${WEB_DIR}/index.html: ${WEB_FILES} web/index.html web/pre.js web/styles.css
+	mkdir -p ${WEB_DIR}
+	emcc -O2 -Wall -Wextra -Iweb ${WEB_FILES} -o ${WEB_DIR}/midway.js \
+		-sASYNCIFY \
+		-sALLOW_MEMORY_GROWTH \
+		-sEXIT_RUNTIME=0 \
+		--pre-js web/pre.js
+	cp web/index.html ${WEB_DIR}/index.html
+	cp web/styles.css ${WEB_DIR}/styles.css
+
+.PHONY: all install clean web

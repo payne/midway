@@ -1,5 +1,6 @@
 #include <ncurses.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #define MIDWAY 11
 #define JAPANESE 12
