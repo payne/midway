@@ -64,7 +64,7 @@ modern browser.
 
 * **Emscripten flags used**
   * `-s ASYNCIFY` – suspends/resumes the WASM stack so the blocking
-    `getchar()` / `fgets()` / `scanf()` calls in the game loop work
+    `wgetch()` / `wgetstr()` calls in the ncurses compatibility layer work
     correctly in a single-threaded browser environment.
   * `web/ncurses_compat.c` plus `web/ncurses.h` provide the compatibility
     layer used by the browser build instead of the native ncurses dependency.
