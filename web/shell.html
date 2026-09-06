@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Midway – Battle of Midway (1942)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0a0a0a;
+      color: #d4d4d4;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 12px;
+    }
+    h1 {
+      font-size: 1.1rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #7ebde0;
+      margin-bottom: 8px;
+    }
+    #help {
+      font-size: 0.75rem;
+      color: #888;
+      margin-bottom: 10px;
+      text-align: center;
+      max-width: 700px;
+    }
+    #terminal-wrapper {
+      border: 1px solid #333;
+      border-radius: 4px;
+      overflow: hidden;
+      width: 100%;
+      max-width: 780px;
+    }
+    #terminal { background: #000; }
+    #status {
+      margin-top: 8px;
+      font-size: 0.75rem;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <h1>Midway (1942)</h1>
+  <div id="help">
+    Arrow-key equivalents: <b>h/j/k/l</b> = fire flak (W/S/A/D headings), <b>H/J/K/L</b> = set course,
+    <b>Enter</b> = fire guns, <b>t/b/f/c/r/s</b> = launch planes, <b>a</b> = autoplay, <b>q</b> = quit.
+  </div>
+  <div id="terminal-wrapper"><div id="terminal"></div></div>
+  <div id="status">Loading…</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+  <script>
+    /* ------------------------------------------------------------------ *
+     * xterm.js terminal wired up to the Emscripten Module TTY.           *
+     * ------------------------------------------------------------------ */
+    const term = new Terminal({
+      cols: 80,
+      rows: 24,
+      fontSize: 16,
+      fontFamily: 'Menlo, Consolas, "DejaVu Sans Mono", monospace',
+      theme: {
+        background: '#000000',
+        foreground: '#d4d4d4',
+        cursor:     '#7ebde0',
+      },
+      allowProposedApi: true,
+    });
+    const fitAddon = new FitAddon.FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(document.getElementById('terminal'));
+    fitAddon.fit();
+    window.addEventListener('resize', () => fitAddon.fit());
+
+    /* Queue keystrokes so the FS.init input function can consume them.   */
+    let inputQueue = [];
+    let inputResolver = null;   /* wakeUp callback from Asyncify.handleSleep */
+
+    term.onData(data => {
+      /* Iterate by Unicode code point to handle multi-byte characters
+         correctly (avoids surrogate-pair issues with charCodeAt).        */
+      let i = 0;
+      while (i < data.length) {
+        const cp = data.codePointAt(i);
+        i += cp > 0xFFFF ? 2 : 1;   /* advance past surrogate pair if any */
+
+        if (inputResolver) {
+          const resolve = inputResolver;
+          inputResolver = null;
+          resolve(cp);
+        } else {
+          inputQueue.push(cp);
+        }
+      }
+    });
+
+    /* ------------------------------------------------------------------ *
+     * Emscripten Module configuration.                                   *
+     * ------------------------------------------------------------------ */
+    var Module = {
+      /* Route stdout/stderr to the xterm terminal. */
+      print: function(text) {
+        term.write(text + '\r\n');
+      },
+      printErr: function(text) {
+        term.write('\x1b[31m' + text + '\x1b[0m\r\n');
+      },
+
+      canvas: null,   /* no canvas – we use TTY mode */
+
+      /* Wire up async stdin via FS.init before main() is called.
+         With ASYNCIFY=1 the input function may call Asyncify.handleSleep
+         to suspend the WASM stack until a keypress arrives, avoiding the
+         EOF signal that a synchronous -1 return would otherwise cause.   */
+      preRun: [function() {
+        FS.init(function inputFn() {
+          if (inputQueue.length > 0) return inputQueue.shift();
+          /* Suspend WASM execution until the next keypress.              */
+          return Asyncify.handleSleep(function(wakeUp) {
+            if (inputQueue.length > 0) {
+              wakeUp(inputQueue.shift());
+            } else {
+              inputResolver = wakeUp;
+            }
+          });
+        }, null, null);
+      }],
+
+      onRuntimeInitialized: function() {
+        document.getElementById('status').textContent =
+          'Game loaded – type your choices in the terminal above.';
+      },
+
+      setStatus: function(text) {
+        if (text) document.getElementById('status').textContent = text;
+      },
+
+      monitorRunDependencies: function(left) {
+        if (left === 0) Module.setStatus('');
+      },
+    };
+  </script>
+
+  <!-- Emscripten-generated JS loader (produced by the web build target) -->
+  <script src="midway.js"></script>
+</body>
+</html>
+

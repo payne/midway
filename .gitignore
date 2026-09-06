@@ -1,2 +1,6 @@
 *.o
 midway
+# Web build artifacts (produced by 'make web')
+web/midway.html
+web/midway.js
+web/midway.wasm
