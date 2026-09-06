@@ -529,7 +529,7 @@ void playit(void)
 	char buf[128];
 
 	for (;;) {
-		switch (c = getchar()) {
+		switch (c = wgetch(view)) {
 
 			case 'h':
 				flack(270, player);
@@ -766,6 +766,11 @@ void initialize(void)
 	register int n;
 	char **mess;
 	int *table;
+
+#ifdef __EMSCRIPTEN__
+	player = virtual = amtable[0];
+	return;
+#endif
 
 	setbuf(stdout, NULL);
 
