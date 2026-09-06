@@ -529,7 +529,7 @@ void playit(void)
 	char buf[128];
 
 	for (;;) {
-		switch (c = getchar()) {
+		switch (c = wgetch(view)) {
 
 			case 'h':
 				flack(270, player);

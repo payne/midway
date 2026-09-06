@@ -16,7 +16,7 @@ MODERN BUILD NOTES
 		- The workflow builds web artifacts with Emscripten,
 		  uploads web/dist as the Pages artifact, and deploys
 		  via actions/deploy-pages.
-		- Live site URL: https://payne.github.io/midway/
+		- Project Pages URL pattern: https://<owner>.github.io/midway/
 
 USAGE
 	% Midway [-b bad weather]

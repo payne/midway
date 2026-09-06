@@ -9,6 +9,11 @@
 
 static WINDOW *stdscr;
 static int do_echo;
+enum { WGETSTR_BUF = 128 };
+enum { RENDER_CELLS = LINES * COLS };
+enum { RENDER_BYTES = RENDER_CELLS + (LINES - 1) + 1 };
+static char render_out[RENDER_BYTES];
+static char render_screen[RENDER_CELLS];
 
 EM_JS(int, web_midway_read_key, (), {
 	if (!Module.midwayKeyQueue || Module.midwayKeyQueue.length === 0) {
@@ -116,18 +121,16 @@ int clear(void)
 int refresh(void)
 {
 	if (!stdscr) return ERR;
-	char out[(LINES * (COLS + 1)) + 1];
-	char screen[LINES * COLS];
-	memcpy(screen, stdscr->cells, sizeof(screen));
+	memcpy(render_screen, stdscr->cells, sizeof(render_screen));
 	int p = 0;
 	for (int y = 0; y < LINES; y++) {
 		for (int x = 0; x < COLS; x++) {
-			out[p++] = screen[y * COLS + x];
+			render_out[p++] = render_screen[y * COLS + x];
 		}
-		if (y < LINES - 1) out[p++] = '\n';
+		if (y < LINES - 1) render_out[p++] = '\n';
 	}
-	out[p] = '\0';
-	web_midway_render(out);
+	render_out[p] = '\0';
+	web_midway_render(render_out);
 	return 0;
 }
 
@@ -167,20 +170,20 @@ int wrefresh(WINDOW *win)
 	return refresh();
 }
 
-int waddch(WINDOW *win, const char ch)
+int waddch(WINDOW *win, int ch)
 {
 	if (!win) return ERR;
 	clamp_cursor(win);
-	win->cells[win->cur_y * win->cols + win->cur_x] = ch;
+	win->cells[win->cur_y * win->cols + win->cur_x] = (char)ch;
 	if (win->cur_x < win->cols - 1) win->cur_x++;
 	return 0;
 }
 
-char winch(WINDOW *win)
+int winch(WINDOW *win)
 {
 	if (!win) return ' ';
 	clamp_cursor(win);
-	return win->cells[win->cur_y * win->cols + win->cur_x];
+	return (unsigned char)win->cells[win->cur_y * win->cols + win->cur_x];
 }
 
 int wprintw(WINDOW *win, const char *fmt, ...)
@@ -204,7 +207,7 @@ int mvwaddstr(WINDOW *win, int y, int x, const char *str)
 	return 0;
 }
 
-int mvwaddch(WINDOW *win, int y, int x, const char ch)
+int mvwaddch(WINDOW *win, int y, int x, int ch)
 {
 	if (!win) return ERR;
 	wmove(win, y, x);
@@ -224,6 +227,7 @@ int mvwprintw(WINDOW *win, int y, int x, const char *fmt, ...)
 
 int wgetstr(WINDOW *win, char *str)
 {
+	/* Midway passes 128-byte command buffers to wreadstr/wgetstr. */
 	if (!str) return ERR;
 	int idx = 0;
 	for (;;) {
@@ -243,7 +247,7 @@ int wgetstr(WINDOW *win, char *str)
 			}
 			continue;
 		}
-		if (c < 32 || c > 126 || idx >= 126) continue;
+		if (c < 32 || c > 126 || idx >= WGETSTR_BUF - 1) continue;
 		str[idx++] = (char)c;
 		if (do_echo && win) {
 			waddch(win, (char)c);
@@ -286,23 +290,21 @@ int mvcur(int oldrow, int oldcol, int newrow, int newcol)
 	return 0;
 }
 
-int getchar(void)
-{
-	return blocking_key();
-}
-
 int move(int y, int x)
 {
+	if (!stdscr) return ERR;
 	return wmove(stdscr, y, x);
 }
 
 int addstr(const char *str)
 {
+	if (!stdscr) return ERR;
 	return mvwaddstr(stdscr, stdscr->cur_y, stdscr->cur_x, str);
 }
 
 int printw(const char *fmt, ...)
 {
+	if (!stdscr) return ERR;
 	va_list ap;
 	va_start(ap, fmt);
 	int rc = append_formatted(stdscr, fmt, ap);
@@ -310,19 +312,22 @@ int printw(const char *fmt, ...)
 	return rc;
 }
 
-int mvaddch(int y, int x, const char ch)
+int mvaddch(int y, int x, int ch)
 {
+	if (!stdscr) return ERR;
 	wmove(stdscr, y, x);
 	return waddch(stdscr, ch);
 }
 
 int mvaddstr(int y, int x, const char *str)
 {
+	if (!stdscr) return ERR;
 	return mvwaddstr(stdscr, y, x, str);
 }
 
 int mvprintw(int y, int x, const char *fmt, ...)
 {
+	if (!stdscr) return ERR;
 	wmove(stdscr, y, x);
 	va_list ap;
 	va_start(ap, fmt);
