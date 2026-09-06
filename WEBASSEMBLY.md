@@ -35,26 +35,27 @@ make          # or:  make all
 make web
 ```
 
-This produces three files inside the `web/` directory:
+This produces the browser build inside `web/dist/`:
 
 | File | Description |
 |------|-------------|
-| `web/midway.html` | Browser entry point – open this to play |
-| `web/midway.js`   | Emscripten JS glue / loader |
-| `web/midway.wasm` | WebAssembly binary |
+| `web/dist/index.html` | Browser entry point – open this to play |
+| `web/dist/midway.js`  | Emscripten JS glue / loader |
+| `web/dist/midway.wasm` | WebAssembly binary |
+| `web/dist/styles.css` | Browser styles |
 
 ---
 
 ### Running locally in a browser
 
-Browsers block WebAssembly loaded from `file://` URLs.  Serve the `web/`
+Browsers block WebAssembly loaded from `file://` URLs.  Serve the `web/dist/`
 directory with any static HTTP server, for example:
 
 ```sh
-python3 -m http.server 8080 --directory web
+python3 -m http.server 8080 --directory web/dist
 ```
 
-Then open **http://localhost:8080/midway.html** in Chrome, Firefox, or any
+Then open **http://localhost:8080/** in Chrome, Firefox, or any
 modern browser.
 
 ---
@@ -62,15 +63,12 @@ modern browser.
 ### Implementation notes
 
 * **Emscripten flags used**
-  * `-s USE_NCURSES=1` – Emscripten's built-in pdcurses port replaces the
-    native ncurses dependency.
-  * `-s ASYNCIFY=1` – suspends/resumes the WASM stack so the blocking
+  * `-s ASYNCIFY` – suspends/resumes the WASM stack so the blocking
     `getchar()` / `fgets()` / `scanf()` calls in the game loop work
     correctly in a single-threaded browser environment.
-  * `--shell-file web/shell.html` – uses the custom HTML template that wires
-    an [xterm.js](https://xtermjs.org) terminal to the Emscripten TTY, giving
-    the ncurses display a proper VT100-capable terminal inside the browser
-    window.
+  * `web/ncurses_compat.c` plus `web/ncurses.h` provide the compatibility
+    layer used by the browser build instead of the native ncurses dependency.
+  * `--pre-js web/pre.js` loads the JavaScript glue used by the Pages build.
 
 * **Known limitations**
   * The score log (`/usr/public/.midwaylog`) is not persistent between page
