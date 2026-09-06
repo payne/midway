@@ -12,7 +12,7 @@ MODERN BUILD NOTES
 
 	GitHub Pages deployment:
 		- Workflow: .github/workflows/pages.yml
-		- Trigger: push to main (or manual workflow_dispatch)
+		- Trigger: push to master (or manual workflow_dispatch)
 		- The workflow builds web artifacts with Emscripten,
 		  uploads web/dist as the Pages artifact, and deploys
 		  via actions/deploy-pages.
