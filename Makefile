@@ -21,7 +21,7 @@ EMCC     = emcc
 
 all: ${PROG}
 
-web: ${WEB_DIR}/index.html
+web: ${WEB_DIR}/midway.js ${WEB_DIR}/index.html ${WEB_DIR}/styles.css
 
 ${PROG}: ${OBJS}
 	${CC} ${OBJS} -o ${PROG} ${LDLIBS}
@@ -44,13 +44,19 @@ clean:
 	${RM} ${OBJS} ${JUNKFILES}
 	${RM} -r ${WEB_DIR}
 
-${WEB_DIR}/index.html: ${WEB_FILES} web/index.html web/pre.js web/styles.css
+${WEB_DIR}:
 	mkdir -p ${WEB_DIR}
+
+${WEB_DIR}/midway.js: ${WEB_FILES} web/pre.js | ${WEB_DIR}
 	emcc -O2 -Wall -Wextra -Iweb ${WEB_FILES} -o ${WEB_DIR}/midway.js \
 		-sASYNCIFY \
 		-sALLOW_MEMORY_GROWTH \
 		-sEXIT_RUNTIME=0 \
 		--pre-js web/pre.js
+
+${WEB_DIR}/index.html: web/index.html | ${WEB_DIR}
 	cp web/index.html ${WEB_DIR}/index.html
+
+${WEB_DIR}/styles.css: web/styles.css | ${WEB_DIR}
 	cp web/styles.css ${WEB_DIR}/styles.css
 .PHONY: all install clean web
