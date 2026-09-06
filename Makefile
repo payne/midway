@@ -47,7 +47,7 @@ clean:
 ${WEB_DIR}:
 	mkdir -p ${WEB_DIR}
 
-${WEB_DIR}/midway.js: ${WEB_FILES} web/pre.js | ${WEB_DIR}
+${WEB_DIR}/midway.js: ${WEB_FILES} midway.h web/ncurses.h web/pre.js | ${WEB_DIR}
 	emcc -O2 -Wall -Wextra -Iweb ${WEB_FILES} -o ${WEB_DIR}/midway.js \
 		-sASYNCIFY \
 		-sALLOW_MEMORY_GROWTH \
